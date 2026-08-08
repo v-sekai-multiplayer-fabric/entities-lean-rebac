@@ -216,20 +216,34 @@ def isAuthority {n : Nat} (view : NodeView n) (h : Nat) : Bool :=
   | none   => false
   | some r => r.zoneId == view.selfId.val
 
-/-- The authority locality theorem: under NoGod, there is no global coordinator,
-    but the authority zone for entity E IS the local coordinator for decisions about E.
-    Any rebacCheck for .interact or .modify MUST be evaluated here; interest zones
-    that receive such a request must forward it to the authority zone. -/
-theorem rebac_requires_authority_for_mutation {n : Nat} (view : NodeView n)
-    (rep : RelReplica n) (_claim : PlayerClaim n)
-    (_hauth : isAuthority view rep.hilbertCode = true) :
-    -- Authority zone: may evaluate rebacCheck for any action.
-    -- Proof: the authority zone is the single owner; no coordinator needed.
-    True :=
-  trivial
+/-- The decision this node is entitled to make.
 
-/-- An interest zone (non-authority) may evaluate .observe locally:
-    the public relation holds by default, so no forwarding is needed for reads. -/
+    `none` means the answer is not binding here and the request must be
+    forwarded to the authority zone for the entity.
+
+    This names the concept the earlier statements of the theorems below
+    described in prose but could not express: `rebacCheck` is a pure function
+    with no notion of who is asking, so "not binding" is not a property of it.
+    It is a property of the node evaluating it. -/
+def bindingDecision {n : Nat} (view : NodeView n) (rep : RelReplica n)
+    (claim : PlayerClaim n) (action : Action) : Option Bool :=
+  match action with
+  | .observe => some (rebacCheck claim action)
+  | _ =>
+    if isAuthority view rep.hilbertCode then some (rebacCheck claim action) else none
+
+/-- The authority locality theorem: under NoGod there is no global coordinator,
+    but the authority zone for entity E is the local coordinator for decisions
+    about E, and may evaluate any action. -/
+theorem authority_binds_any_action {n : Nat} (view : NodeView n)
+    (rep : RelReplica n) (claim : PlayerClaim n) (action : Action)
+    (hauth : isAuthority view rep.hilbertCode = true) :
+    bindingDecision view rep claim action = some (rebacCheck claim action) := by
+  unfold bindingDecision
+  cases action <;> simp [hauth]
+
+/-- An interest zone (non-authority) may evaluate `.observe` locally: the public
+    relation holds by default, so no forwarding is needed for reads. -/
 theorem interest_can_answer_observe {n : Nat} (view : NodeView n)
     (rep : RelReplica n) (claim : PlayerClaim n)
     (_hnotauth : isAuthority view rep.hilbertCode = false)
@@ -237,17 +251,23 @@ theorem interest_can_answer_observe {n : Nat} (view : NodeView n)
     rebacCheck claim .observe = true :=
   rebac_public_observe claim hpub
 
-/-- interact and modify require the authority zone: an interest-only zone
-    cannot grant these — it must forward to the authority zone for entity E.
-    Formal statement: if this zone is NOT the authority, rebacCheck on .interact
-    or .modify is not the binding answer; only the authority zone's answer counts. -/
+/-- The same, stated over `bindingDecision`: observe is binding anywhere. -/
+theorem interest_binding_observe {n : Nat} (view : NodeView n)
+    (rep : RelReplica n) (claim : PlayerClaim n) :
+    bindingDecision view rep claim .observe = some (rebacCheck claim .observe) := by
+  unfold bindingDecision; simp
+
+/-- `interact` and `modify` require the authority zone: an interest-only zone
+    cannot bind these, and must forward to the authority zone for entity E.
+
+    Previously stated as `True := trivial`, which is provable regardless of any
+    hypothesis and therefore established nothing. -/
 theorem non_authority_cannot_bind_mutation {n : Nat} (view : NodeView n)
-    (rep : RelReplica n)
-    (_hnotauth : isAuthority view rep.hilbertCode = false)
-    (action : Action) (_hact : action = .interact ∨ action = .modify) :
-    -- The result of rebacCheck here is NOT binding; forward to authority zone.
-    -- Modeled as: the non-authority evaluation is irrelevant (trivially true).
-    True :=
-  trivial
+    (rep : RelReplica n) (claim : PlayerClaim n) (action : Action)
+    (hact : action = .interact ∨ action = .modify)
+    (hnotauth : isAuthority view rep.hilbertCode = false) :
+    bindingDecision view rep claim action = none := by
+  unfold bindingDecision
+  rcases hact with h | h <;> subst h <;> simp [hnotauth]
 
 end PredictiveBVH.Relativistic
