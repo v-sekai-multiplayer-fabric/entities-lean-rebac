@@ -1,4 +1,4 @@
-# AGENTS.md — lean-rebac-core
+# AGENTS.md — entities-lean-rebac
 
 Guidance for AI coding agents working in this repo.
 
