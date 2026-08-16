@@ -1,8 +1,8 @@
-# lean-rebac-core
+# entities-lean-rebac
 
 Relationship-based access-control hexagon (NoGod / ReBAC): dependency-free authorization core. The production `NoGod` core is Mathlib-free; the research-tier `ReBAC` proofs use Mathlib.
 
-> Split out of the [`lean-predictive-bvh`](https://github.com/v-sekai-multiplayer-fabric/lean-predictive-bvh) monorepo (now archived). Each hexagon cluster is its own repo following the `core/ports/adapters` convention; cross-cluster wiring is via Lake `require ... from git`.
+> Split out of the [`lean-predictive-bvh`](https://github.com/v-sekai-multiplayer-fabric/lean-predictive-bvh) monorepo (now archived). Cross-cluster wiring is via Lake `require ... from git`.
 
 ## Dependencies
 
@@ -11,12 +11,15 @@ Relationship-based access-control hexagon (NoGod / ReBAC): dependency-free autho
 ## Build
 
 ```sh
-lake build         # production gate: typecheck the  cluster
+lake build           # production gate: typecheck the Rebac cluster
 lake build Research  # research-tier (non-gating; may fail)
 ```
 
 ## Hexagon layout
 
-- `core/` — dependency-free domain logic + proofs
-- `ports/` — narrow driving (source) / driven (sink) contracts
-- `adapters/` — concrete I/O at the edges
+The triad sits one namespace down, under `Rebac/`:
+
+- `Rebac/core/` — dependency-free domain logic + proofs (`NoGod.lean`, `ReBAC.lean`)
+- `Rebac/ports/` — narrow driving (source) / driven (sink) contracts (`AuthQuery.lean`)
+
+There is no `adapters/` directory. Nothing here reaches concrete I/O yet.

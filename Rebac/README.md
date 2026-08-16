@@ -6,7 +6,8 @@ Relationship-based access-control hexagon (NoGod / ReBAC): dependency-free autho
 
 - `core/` — dependency-free domain logic + proofs
 - `ports/` — narrow driving (source) / driven (sink) contracts
-- `adapters/` — concrete I/O at the edges
+
+There is no `adapters/` directory. Nothing here reaches concrete I/O yet.
 
 ## Sibling wiring
 
